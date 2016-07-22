@@ -15,10 +15,10 @@ set(${CMAKE_PROJECT_NAME}_TEST_DIR ${${CMAKE_PROJECT_NAME}_ROOT_DIR}/test)
 configure_file(${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}/config.h.in ${${CMAKE_PROJECT_NAME}_INCLUDE_DIRS}/config.h)
 
 # CXX flags
-set(${CMAKE_PROJECT_NAME}_FLAGS " -static -std=c++11 -Wall -Wextra -Werror=strict-aliasing -Wno-unused-parameter")
+set(${CMAKE_PROJECT_NAME}_FLAGS " -std=c++11 -Wall -Wextra -Werror=strict-aliasing -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${${CMAKE_PROJECT_NAME}_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${${CMAKE_PROJECT_NAME}_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-static ${CMAKE_CXX_FLAGS_RELEASE} ${${CMAKE_PROJECT_NAME}_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE " ${CMAKE_CXX_FLAGS_RELEASE} ${${CMAKE_PROJECT_NAME}_FLAGS}")
 if (APPLE)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 else ()
@@ -67,7 +67,7 @@ target_link_libraries(${MAIN_EXE_NAME}
         )
 
 set(ALL_EXE_TARGETS ${MAIN_EXE_NAME})
-
+set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
 install(TARGETS ${ALL_EXE_TARGETS}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
