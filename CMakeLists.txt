@@ -24,12 +24,8 @@ else ()
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 endif ()
 
-#  COMMON INTERFACE
-#add_library(COMMON_INTERFACE INTERFACE)
-
 #  pbcopper
 add_subdirectory(${THIRD_PARTY_DIR}/pbcopper external/pbcopper/build)
-#target_link_libraries(COMMON_INTERFACE INTERFACE pbcopper)
 
 find_package(htslib
         PATHS ${THIRD_PARTY_DIR}/htslib
@@ -42,7 +38,7 @@ set(PacBioBAM_build_tests OFF CACHE INTERNAL "" FORCE)
 set(PacBioBAM_build_tools OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(${THIRD_PARTY_DIR}/pbbam external/pbbam/build)
 
-# complete striped SW
+# complete striped SWmake in
 add_subdirectory("${THIRD_PARTY_DIR}/Complete-Striped-Smith-Waterman-Library" external/ssw/build)
 
 # BOOST

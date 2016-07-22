@@ -4,8 +4,10 @@ Simple python wrapper for SSW library
 Please put the path of libssw.so into LD_LIBRARY_PATH or pass it explicitly as a parameter
 By Yongan Zhao (March 2016)
 
-Modify the original python wrapper to split PacBio subreads bam file based on a custom smrtbell sequence.
-Basically it is to replace the primary analysis.
+By modifying the original SSW python wrapper to split PacBio subreads bam file
+based on a custom smrtbell sequence. This is a prototype using pysam which
+requires an artificial @SQ attribute in the header
+
 By Bo Han(2016/07)
 """
 

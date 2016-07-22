@@ -14,6 +14,7 @@ the second bam is generated from primary analysis that is aware of the
 this script then compare the sequences and see what was removed in the second bam,
 providing information on the ligated sequences
 
+By Bo Han(2016/07)
 '''
 
 import sys, os
@@ -22,7 +23,7 @@ import pysam
 
 class Interval(object):
     '''
-    a simple class to represent a containuous segment in the genome
+    a simple class to represent a continuous segment in the genome
     chromosome name is not used in this specific application
     '''
     __slots__ = ["start", "end"]

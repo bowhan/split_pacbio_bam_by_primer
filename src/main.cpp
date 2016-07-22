@@ -78,8 +78,13 @@ void SplitBam(const BamRecord& record
     newtags["qe"] = (is_left ? left_start + alignment.ref_begin : right_end);
     newtags["cx"] = original_tags.at("cx").ToUInt8()
       | (is_left ? PacBio::BAM::LocalContextFlags::ADAPTER_BEFORE : PacBio::BAM::LocalContextFlags::ADAPTER_AFTER);
-    newtags["ip"] = record.IPD().Encode();
-
+    // TODO: this can be more efficient
+    auto vec = record.IPD().Encode();
+    if (is_left) {
+        newtags["ip"] = decltype(vec){vec.cbegin(), vec.cbegin() + alignment.ref_begin};
+    } else {
+        newtags["ip"] = decltype(vec){vec.cbegin() + alignment.ref_end + 1, vec.cend()};
+    }
     outbam.Impl().Tags(newtags);
 }
 
@@ -91,18 +96,14 @@ int Runner(const PacBio::CLI::Results& args) {
     string primer_seq = args["primer"];
 
     if (outputPrefix.empty()) {
-        cerr << "Error: please provide the output prefix" << endl;
+        std::cerr << "Error: please provide the output prefix" << endl;
         return EXIT_FAILURE;
     }
     auto subread_bam_files = args.PositionalArguments();
-
-    int zmw, left_start, right_end;
+    int left_start, right_end;
     // align
-    // Declares a default Aligner
     StripedSmithWaterman::Aligner aligner;
-    // Declares a default filter
     StripedSmithWaterman::Filter filter;
-    // Declares an alignment that stores the result
     StripedSmithWaterman::Alignment alignment;
 
     for (const auto& subread_bam_file : subread_bam_files) {
@@ -118,8 +119,6 @@ int Runner(const PacBio::CLI::Results& args) {
         BamRecord record;
         string fullname; // for BAM record
         while (subread_bam_fh.GetNext(record)) {
-            // out
-            BamRecord l(header), r(header);
             // Aligns the query to the ref
             alignment.Clear();
             aligner.Align(primer_seq.c_str(), record.Sequence().c_str(), record.Sequence().size(), filter, &alignment);
@@ -129,16 +128,22 @@ int Runner(const PacBio::CLI::Results& args) {
             auto tokens2 = Utils::Tokenize(tokens[2], '_');
             if (!Utils::StringViewTo(tokens2[0], left_start) || !Utils::StringViewTo(tokens2[1], right_end)) {
                 std::cerr << "failed to convert start or end\n";
-                return 1;
+                return EXIT_FAILURE;
             }
             // fix sequence
-            SplitBam<true>(record, l, tokens[0], tokens[1], left_start, right_end, alignment);
-            SplitBam<false>(record, r, tokens[0], tokens[1], left_start, right_end, alignment);
-            // write
-            out_fh.Write(l);
-            out_fh.Write(r);
+            if (alignment.ref_begin > 0) {
+                BamRecord l(header);
+                SplitBam<true>(record, l, tokens[0], tokens[1], left_start, right_end, alignment);
+                out_fh.Write(l);
+            }
+            if (left_start + alignment.ref_end + 1 < right_end) {
+                BamRecord r(header);
+                SplitBam<false>(record, r, tokens[0], tokens[1], left_start, right_end, alignment);
+                out_fh.Write(r);
+            }
         }
     }
+    return EXIT_SUCCESS;
 }
 
 } // end of namespace

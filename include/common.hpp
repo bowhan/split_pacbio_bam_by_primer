@@ -5,11 +5,7 @@
 #include <sstream>
 #include <boost/utility/string_ref.hpp>
 
-#define MACRO_TO_CHAR_(x) #x
-#define MACRO_TO_CHAR(x) MACRO_TO_CHAR_(x)
-
 using StringView = boost::string_ref;
-
 
 namespace Utils {
 
