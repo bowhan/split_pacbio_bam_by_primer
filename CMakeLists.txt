@@ -4,10 +4,6 @@ project(SPLIT_PRIMER_FROM_PBBAM VERSION 0.0.0.1 LANGUAGES CXX)
 
 string(TOLOWER ${CMAKE_PROJECT_NAME} MAIN_EXE_NAME)
 
-set(PacBioBAM_build_docs OFF CACHE INTERNAL "" FORCE)
-set(PacBioBAM_build_tests OFF CACHE INTERNAL "" FORCE)
-set(PacBioBAM_build_tools OFF CACHE INTERNAL "" FORCE)
-
 # variables to all sorts of directories
 set(${CMAKE_PROJECT_NAME}_ROOT_DIR ${PROJECT_SOURCE_DIR})
 set(INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
@@ -29,11 +25,11 @@ else ()
 endif ()
 
 #  COMMON INTERFACE
-add_library(COMMON_INTERFACE INTERFACE)
+#add_library(COMMON_INTERFACE INTERFACE)
 
 #  pbcopper
 add_subdirectory(${THIRD_PARTY_DIR}/pbcopper external/pbcopper/build)
-target_link_libraries(COMMON_INTERFACE INTERFACE pbcopper)
+#target_link_libraries(COMMON_INTERFACE INTERFACE pbcopper)
 
 find_package(htslib
         PATHS ${THIRD_PARTY_DIR}/htslib
@@ -41,15 +37,14 @@ find_package(htslib
 
 # pbbam
 # prevent pbbam from building unnecessaries
-#set(PacBioBAM_build_docs OFF CACHE INTERNAL "" FORCE)
-#set(PacBioBAM_build_tests OFF CACHE INTERNAL "" FORCE)
-#set(PacBioBAM_build_tools OFF CACHE INTERNAL "" FORCE)
+set(PacBioBAM_build_docs OFF CACHE INTERNAL "" FORCE)
+set(PacBioBAM_build_tests OFF CACHE INTERNAL "" FORCE)
+set(PacBioBAM_build_tools OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(${THIRD_PARTY_DIR}/pbbam external/pbbam/build)
-target_link_libraries(COMMON_INTERFACE INTERFACE pbbam)
 
 # complete striped SW
 add_subdirectory("${THIRD_PARTY_DIR}/Complete-Striped-Smith-Waterman-Library" external/ssw/build)
-target_link_libraries(COMMON_INTERFACE INTERFACE sswlib)
+
 # BOOST
 find_package(Boost REQUIRED)
 
@@ -68,13 +63,10 @@ add_executable(${MAIN_EXE_NAME}
 
 # link
 target_link_libraries(${MAIN_EXE_NAME}
-        PUBLIC
-        COMMON_INTERFACE
+        pbcopper
+        pbbam
+        sswlib
         ${ZLIB_LIBRARIES}
         )
 add_dependencies(${MAIN_EXE_NAME} htslib)
-
-set(ALL_EXE_TARGETS ${MAIN_EXE_NAME})
-
-install(TARGETS ${ALL_EXE_TARGETS}
-        RUNTIME DESTINATION bin)
+set_target_properties(${MAIN_EXE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
