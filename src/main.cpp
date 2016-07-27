@@ -133,6 +133,7 @@ public:
 
     void operator()() {
         vector<BamRecord> outputs;
+        outputs.reserve(queue_.Capacity());
         string fullname;
         int left_start, right_end;
         StripedSmithWaterman::Aligner aligner;

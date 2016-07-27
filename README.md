@@ -1,0 +1,40 @@
+## Split PacBio subreads BAM file using a custom smrtbell primer sequence
+This is still under development
+
+## Pre-requisite
+1. Linux environment with at least 16G of memory
+2. C++ compiler that supports C++11; Boost library
+
+### Install
+```bash
+git clone --recursive git@github.com:bowhan/split_pacbio_bam_by_primer.git
+mkdir -p split_pacbio_bam_by_primer/build && cd split_pacbio_bam_by_primer/build
+cmake .. && make
+# you might need to specify path to BOOST, such as
+BOOST_ROOT=$HOME/.linuxbrew/Cellar/boost/1.60.0_2 cmake .. && make
+```
+
+### Usage
+
+Shell pipeline usage:
+```bash
+split_pacbio_bam.sh split \
+    -i A01_1 \
+    -i sample.subreads.bam \
+    -p ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT \
+    -o output_dir
+```
+
+C++ program usage:
+```bash
+# -p AT...AT: custom smrtbell sequence
+# -t 8 : use 8 threads
+# -o out.subreads.bam: output bam file
+# test.subreads.bam: input subreads bam file
+
+split_primer_from_pbbam \
+    -p ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT \
+    -t 8 \
+    -o out.subreads.bam \
+    test.subreads.bam
+```
