@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 cmake_policy(SET CMP0048 NEW)
 project(SPLIT_PRIMER_FROM_PBBAM VERSION 0.0.0.1 LANGUAGES CXX)
 
@@ -24,9 +24,7 @@ else ()
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 endif ()
 
-#  pbcopper
-add_subdirectory(${THIRD_PARTY_DIR}/pbcopper external/pbcopper/build)
-
+set(htslib_DIR ${THIRD_PARTY_DIR}/htslib)
 find_package(htslib
         PATHS ${THIRD_PARTY_DIR}/htslib
         REQUIRED)
@@ -42,7 +40,7 @@ add_subdirectory(${THIRD_PARTY_DIR}/pbbam external/pbbam/build)
 add_subdirectory("${THIRD_PARTY_DIR}/Complete-Striped-Smith-Waterman-Library" external/ssw/build)
 
 # BOOST
-find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS filesystem REQUIRED)
 
 # include
 include_directories(
@@ -59,10 +57,10 @@ add_executable(${MAIN_EXE_NAME}
 
 # link
 target_link_libraries(${MAIN_EXE_NAME}
-        pbcopper
         pbbam
         sswlib
         ${ZLIB_LIBRARIES}
+        ${Boost_LIBRARIES}
         )
 add_dependencies(${MAIN_EXE_NAME} htslib)
 set_target_properties(${MAIN_EXE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
