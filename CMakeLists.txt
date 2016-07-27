@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 cmake_policy(SET CMP0048 NEW)
-project(SPLIT_PRIMER_FROM_PBBAM VERSION 0.0.0.1 LANGUAGES CXX)
+project(SPLIT_PRIMER_FROM_PBBAM VERSION 0.0.1.0 LANGUAGES CXX)
 
 string(TOLOWER ${CMAKE_PROJECT_NAME} MAIN_EXE_NAME)
 
@@ -11,7 +11,7 @@ set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
 
 # configure files
-configure_file(${INCLUDE_DIRS}/config.h.in ${INCLUDE_DIRS}/config.h)
+configure_file(${INCLUDE_DIRS}/version.h.in ${INCLUDE_DIRS}/version.inc)
 
 # CXX flags
 set(${CMAKE_PROJECT_NAME}_FLAGS "-std=c++11 -Wall -Wextra -Werror=strict-aliasing -Wno-unused-parameter")

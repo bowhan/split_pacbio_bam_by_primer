@@ -39,6 +39,8 @@ public:
         Reserve(data_, capacity_);
     }
 
+    size_type Capacity() const { return capacity_; }
+
     template <class... Args>
     void Fill(Args&& ... args);
 
@@ -52,9 +54,9 @@ template <template <class...> class Container, class T>
 template <class... Args>
 void MultiThreadSafeQueue<Container, T>::Fill(Args&& ... args) {
     std::lock_guard<std::mutex> lock(mx_);
-    while(size_ < capacity_) {
+    while (size_ < capacity_) {
         auto r = Produce(source_, std::forward<Args>(args)...);
-        if(!r.second) return;
+        if (!r.second) return;
         Push(data_, std::move(r.first));
         ++size_;
     }
@@ -75,9 +77,9 @@ template <template <class...> class Container, class T>
 template <class... Args>
 auto MultiThreadSafeQueue<Container, T>::FillAndPop(Args&& ... args) -> container_type {
     std::lock_guard<std::mutex> lock(mx_);
-    while(size_ < capacity_) {
+    while (size_ < capacity_) {
         auto r = Produce(source_, std::forward<Args>(args)...);
-        if(!r.second) break;
+        if (!r.second) break;
         Push(data_, std::move(r.first));
         ++size_;
     }

@@ -16,7 +16,7 @@
 #include <Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h>
 
 #include "common.hpp"
-#include "config.h"
+#include "version.inc"
 #include "threads.hpp"
 
 using namespace std;
@@ -26,6 +26,7 @@ enum Arguments {
     PRIMER
     , OUTPUT
     , THREADS
+    , BULKSIZE
     , INPUT
     , SIZE
 };
@@ -38,6 +39,11 @@ using argument_type = array<string, Arguments::SIZE>;
 #ifndef DEFAULT_NO_THREADS
 #define DEFAULT_NO_THREADS "8"
 #endif
+
+#ifndef DEFAULT_BULK_SIZE
+#define DEFAULT_BULK_SIZE "100"
+#endif
+
 
 template <bool is_left>
 void SplitBam(const BamRecord& record
@@ -180,7 +186,7 @@ int SplitterMT(const argument_type& args) {
     string primer_seq = args[Arguments::PRIMER];
     auto subread_bam_file = args[Arguments::INPUT];
     BamReader subread_bam_fh(subread_bam_file);
-    MultiThreadSafeQueue<vector, BamRecord> queue(subread_bam_fh, 2);
+    MultiThreadSafeQueue<vector, BamRecord> queue(subread_bam_fh, stoi(args[Arguments::BULKSIZE]));
     auto header = subread_bam_fh.Header().DeepCopy();
     BamWriter out_fh(out_file_name
                      , header
@@ -217,11 +223,15 @@ argument_type ArgumentParse(int argc, char** argv) {
         "\t-o      output bam filename, if not provided, the prefix of input bam + refarm.bam will be used\n"
         "\t-p      primer sequence, default: " DEFAULT_PRIMER_SEQ "\n"
         "\t-t      number of threads to use, default: " DEFAULT_NO_THREADS "\n"
+
+        KERNAL_YELLOW
+        "\n[advanced]\n"
+        "\t-b      bulk of records sent to each thread every time, default: " DEFAULT_BULK_SIZE "\n"
         KERNAL_RESET;
 
     argument_type arguments;
     int c;
-    while ((c = getopt(argc, argv, "p:o:t:h")) != -1) {
+    while ((c = getopt(argc, argv, "p:o:t:b:h")) != -1) {
         switch (c) {
             case 'p':
                 arguments[Arguments::PRIMER] = optarg;
@@ -230,7 +240,10 @@ argument_type ArgumentParse(int argc, char** argv) {
                 arguments[Arguments::OUTPUT] = optarg;
                 break;
             case 't':
-                arguments[Arguments::THREADS] = atoi(optarg);
+                arguments[Arguments::THREADS] = optarg;
+                break;
+            case 'b':
+                arguments[Arguments::BULKSIZE] = optarg;
                 break;
             case 'h':
             default:
@@ -251,6 +264,9 @@ argument_type ArgumentParse(int argc, char** argv) {
     }
     if (arguments[Arguments::THREADS].empty()) {
         arguments[Arguments::THREADS] = DEFAULT_NO_THREADS;
+    }
+    if (arguments[Arguments::BULKSIZE].empty()) {
+        arguments[Arguments::BULKSIZE] = DEFAULT_BULK_SIZE;
     }
     if (arguments[Arguments::OUTPUT].empty()) {
         string prefix = boost::filesystem::basename(arguments[Arguments::INPUT]);
