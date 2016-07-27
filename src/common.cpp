@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include <vector>
+#include <iostream>
 
 namespace Utils {
 
@@ -45,6 +46,15 @@ bool StringViewTo(const StringView& s, int& ret) {
     }
     if (negative) ret = -ret;
     return true;
+}
+
+void Warning(const std::string& s) {
+    std::cerr << KERNAL_BOLDMAGENTA << "[Warning] " << s << KERNAL_RESET << std::endl;
+}
+
+void Error(const std::string& s) {
+    std::cerr << KERNAL_BOLDRED << "[Error] " << s << KERNAL_RESET << std::endl;
+    exit(EXIT_FAILURE);
 }
 
 }
