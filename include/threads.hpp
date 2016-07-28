@@ -15,8 +15,8 @@ private:
     using container_policies::Reserve;
     using container_policies::Push;
     using container_policies::Capacity;
-    using producer_policies = DataProducerPolicy<T>;
 
+    using producer_policies = DataProducerPolicy<T>;
     using source_type = typename producer_policies::source_type;
     using producer_policies::Produce;
 

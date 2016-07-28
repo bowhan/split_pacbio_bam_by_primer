@@ -37,11 +37,11 @@ using argument_type = array<string, Arguments::SIZE>;
 #endif
 
 #ifndef DEFAULT_NO_THREADS
-#define DEFAULT_NO_THREADS "8"
+#define DEFAULT_NO_THREADS "4"
 #endif
 
 #ifndef DEFAULT_BULK_SIZE
-#define DEFAULT_BULK_SIZE "100"
+#define DEFAULT_BULK_SIZE "500"
 #endif
 
 

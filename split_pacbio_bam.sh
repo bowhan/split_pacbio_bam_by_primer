@@ -38,7 +38,6 @@
 # author: Bo Han (bhan@pacb.com)
 # last modified: 2016-07-26 07:21
 
-declare -xr DEV=1
 declare -xr PACKAGE_NAME="split_pacbio_bam"
 declare -xr CONTACT_EMAILS="bhan@pacb.com"
 
@@ -59,11 +58,6 @@ declare -x  DEFAULT_INDEX_DIR=${PIPELINE_DIRECTORY}/index
 declare -xr ISOBIN=${PIPELINE_DIRECTORY}/bin
 declare -xr PATH=${ISOBIN}:$PATH
 
-if [[ $DEV -eq 1 ]]; then
-    [[ -z $VERBOSE ]] && export VERBOSE=2
-    [[ -z $NDEBUG ]] && export DEBUG="-x"
-fi
-
 set -eu -o pipefail
 ################
 # load modules #
@@ -78,7 +72,7 @@ if [[ $# -lt 1 ]]; then usage && exit 1; fi
 declare SUBPROGRAM=`echo ${1} | tr '[A-Z]' '[a-z]'`
 case $SUBPROGRAM in
   split|s)
-    shift && bash $DEBUG _split.sh "$@" ;;
+    shift && bash _split.sh "$@" ;;
   *)
     echo2 "unrecognized option \"${1}\"! \nplease type \"${PACKAGE_NAME}\" without options to see all the options and usage." error;;
 esac

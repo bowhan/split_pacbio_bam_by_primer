@@ -35,39 +35,48 @@
 # SUCH DAMAGE.
 #################################################################################
 # author: Bo Han (bhan@pacb.com)
-# last modified: 2016-07-26 07:24
+# last modified: 2016-07-28 07:48
 
 #########
 # Basic #
 #########
 declare -r MODULE_NAME=Split
-declare -r MODULE_VERSION=0.0.1
+declare -r MODULE_VERSION=0.0.2
+
+#########
+# Const #
+#########
+declare -r DEFAULT_PRIMER='ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT'
+declare -ri DEFAULT_NUM_THREADS=8
 
 #########
 # Usage #
 #########
 function usage {
 cat << EOF
-${PACKAGE_NAME}/${MODULE_NAME}
+${PACKAGE_NAME}::${MODULE_NAME}
 ================
 
-Split PacBio BAM file with an adaptor sequence
+Split PacBio subreads BAM file with a custom smrtbell sequence
 
 OPTIONS:
         -h      Show usage
         -v      Print version
 
 ${REQUIRED}[ required ]
-        -i      input files with pacBio canonical smrtbell adaptor clipped, can be either of the following two
+        -i      input files with pacBio canonical smrtbell adaptor clipped, can be either of the following two types.
                 1. [ RSII ] directory to RSII primary analysis output, such as A01_1
                 2. [ Sequel ] subreads.bam
-
-        -p      the other smrtbell primer sequence
-        -o      Output folder, will create if not exist. Default: ${PWD}
+                You can specify multiple inputs, each with its own -i tag.
+                Avoid using inputs with the same basename.
 
 ${OPTIONAL}[ optional ]
+        -p      the custom smrtbell primer sequence, Default: ${DEFAULT_PRIMER}
+        -o      Output folder, will create if not exist. Default: ${PWD}
+        -t      Number of threads to use. Default: ${DEFAULT_NUM_THREADS}
 
 ${ADVANCED}[ advanced ]
+        -D      use debug mode (bash -x). Default: off
 
 EOF
 echo -e "${FONT_COLOR_RESET}"
@@ -82,30 +91,32 @@ declare -a Inputs=()
 #############################
 # ARGS reading and checking #
 #############################
-while getopts "hvi:p:o:" OPTION; do
+while getopts "hvi:p:o:t:D" OPTION; do
     case $OPTION in
         h)  usage && exit 0 ;;
-        v)  echo ${PACKAGE_NAME}${MODULE_NAME}v${CompareVersion} && exit 0;;
+        v)  echo ${PACKAGE_NAME}::${MODULE_NAME} v${MODULE_VERSION} && exit 0;;
         i)  declare Input=$(readlink -f ${OPTARG});
             Inputs+=("${Input}")
             ;;
         p)  declare PrimerSequence=${OPTARG};;
         o)  declare OutputDir=${OPTARG};;
+        t)  declare -i Threads=${OPTARG};;
+        D)  set -x;;
         *)  usage && exit 1;;
     esac
 done
-declare -r DEFAULT_PRIMER='ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT'
 
 [[ -z $Input ]] && usage && echo2 "Need do provide at least one input fl_nc fasta file with -i option" error
 [[ -z $PrimerSequence ]] && declare PrimerSequence=$DEFAULT_PRIMER && echo2 "You have not provide the pipeline with a custom smrtbell primer with -p, thus to use the default primer ${DEFAULT_PRIMER}" warning
-
+[[ -z $Threads ]] && declare -i Threads=${DEFAULT_NUM_THREADS}
 [[ -z $OutputDir ]] && OutputDir=${RANDOM}.out
+
+for file in "${Inputs[@]}"; do dirOrFileCheck $file; done
+for program in "${REQUIRED_PROGRAMS[@]}"; do binCheck $program; done
+
 mkdir -p $OutputDir || echo2 "Don't have permission to create folder $OutputDir" error
 cd $OutputDir || echo2 "Don't have permission to access folder $OutputDir" error
 ( touch a && rm -f a ) || echo2 "Don't have permission to write in folder $OutputDir" error
-
-for program in "${REQUIRED_PROGRAMS[@]}"; do binCheck $program; done
-for file in "${REQUIRED_INPUT[@]}"; do fileCheck $file; done
 
 declare RUNUID=`echo $@ | md5sum | cut -d' ' -f1` # for re-run
 echo2 "Begin the pipeline ${PACKAGE_NAME} ${MODULE_NAME}"
@@ -140,7 +151,7 @@ if [[ ! -f ${RUNUID}.${Step}.Done || ${RUNUID}.${Step}.Done -ot ${RUNUID}.$((Ste
         declare Prefix=$(basename ${bamFile%.subreads.bam})
         echo2 "Split ${bamFile}"
         if ! isFile ${Prefix}.refarm.bam; then
-            split_primer_from_pbbam -p $PrimerSequence -o ${Prefix} ${bamFile}
+            split_primer_from_pbbam -p $PrimerSequence -o ${Prefix}.refarm.bam -t ${Threads} ${bamFile}
         else
             echo2 "Skipping ${bamFile} because the output ${Prefix}.refarm.bam has existed" warning
         fi

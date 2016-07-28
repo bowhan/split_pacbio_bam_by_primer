@@ -39,6 +39,13 @@ function binCheck {
     [[ $VERBOSE -gt 0 ]] && echo2 "$1: $program_path"
 }
 
+function fileCheck {
+    [[ ! -f "${1}" ]] && echo2 "Required file \"${1}\" doesn't exist" error
+}
+
+function dirOrFileCheck {
+    [[ ! -d "${1}" ]] && [[ ! -f "${1}"  ]] && echo2 "Required file or directory \"${1}\" doesn't exist" error
+}
 
 function isFile {
     [[ ! -f "${1}" ]] && return 1
@@ -50,7 +57,6 @@ function isDir {
     [[ ! -d "${1}" ]] && return 1
     return 0
 }
-
 
 function indexOf {
     local element
@@ -71,6 +77,8 @@ function validateRSII {
 export -f usage
 export -f echo2
 export -f binCheck
+export -f fileCheck
+export -f dirOrFileCheck
 export -f isFile
 export -f isDir
 export -f indexOf
