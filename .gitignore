@@ -1,4 +1,3 @@
 .idea/
 build
-include/version.inc
 bin/split_primer_from_pbbam
