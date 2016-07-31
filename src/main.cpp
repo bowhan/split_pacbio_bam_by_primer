@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,8 +8,8 @@
 #include <cstdlib>
 #include <cassert>
 #include <boost/any.hpp>
-#include <boost/filesystem.hpp>
 
+#include <boost/filesystem.hpp>
 #include <pbbam/BamFile.h>
 #include <pbbam/BamReader.h>
 #include <pbbam/BamRecord.h>

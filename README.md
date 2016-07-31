@@ -2,7 +2,7 @@
 This is still under development
 
 ## Pre-requisite
-1. Linux environment with at least 16G of memory
+1. Linux environment
 2. C++ compiler that supports C++11; Boost library
 
 ### Install
@@ -18,6 +18,11 @@ BOOST_ROOT=$HOME/.linuxbrew/Cellar/boost/1.60.0_2 cmake .. && make
 
 Shell pipeline usage:
 ```bash
+# You can provide arbitrary number of inputs from either RS II or Seqeuel
+# in the following example,
+# A01_1 is the primary analysis output of RS II
+# sample.subreads.bam is the primary output of Sequel
+
 split_pacbio_bam.sh split \
     -i A01_1 \
     -i sample.subreads.bam \

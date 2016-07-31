@@ -6,6 +6,7 @@
 #include <boost/utility/string_ref.hpp>
 #include "kernel_color.hpp"
 
+
 using StringView = boost::string_ref;
 
 namespace Utils {

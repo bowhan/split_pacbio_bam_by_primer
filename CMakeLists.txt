@@ -1,7 +1,16 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 cmake_policy(SET CMP0048 NEW)
-project(SPLIT_PRIMER_FROM_PBBAM VERSION 0.0.1.0 LANGUAGES CXX)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_COURSE_DIR}/cmake")
+# version
+foreach (level MAJOR MINOR PATCH)
+    file(STRINGS include/version.inc
+            _define_${level}
+            REGEX "#define PROG_${level}_VERSION")
+    string(REGEX MATCH "([0-9]+)" _${level} "${_define_${level}}")
+endforeach ()
 
+set(VERSION "${_MAJOR}.${_MINOR}.${_PATCH}")
+project(SPLIT_PRIMER_FROM_PBBAM VERSION ${VERSION} LANGUAGES CXX)
 string(TOLOWER ${CMAKE_PROJECT_NAME} MAIN_EXE_NAME)
 
 # variables to all sorts of directories
@@ -9,9 +18,6 @@ set(${CMAKE_PROJECT_NAME}_ROOT_DIR ${PROJECT_SOURCE_DIR})
 set(INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
-
-# configure files
-configure_file(${INCLUDE_DIRS}/version.h.in ${INCLUDE_DIRS}/version.inc)
 
 # CXX flags
 set(${CMAKE_PROJECT_NAME}_FLAGS "-std=c++11 -Wall -Wextra -Werror=strict-aliasing -Wno-unused-parameter")
