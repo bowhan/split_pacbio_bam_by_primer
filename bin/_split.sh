@@ -85,7 +85,7 @@ echo -e "${FONT_COLOR_RESET}"
 ##########
 # Config #
 ##########
-declare -a REQUIRED_PROGRAMS=('bax2bam' 'split_primer_from_pbbam')
+declare -a REQUIRED_PROGRAMS=('bax2bam' 'split_primer_from_pbbam' 'pbindex' 'dataset')
 declare -a Inputs=()
 
 #############################
@@ -149,12 +149,27 @@ echo2 "Begin to split bam files"
 if [[ ! -f ${RUNUID}.${Step}.Done || ${RUNUID}.${Step}.Done -ot ${RUNUID}.$((Step-1)).Done ]]; then
     for bamFile in "${bamInputs[@]}"; do
         declare Prefix=$(basename ${bamFile%.subreads.bam})
+        # split bam file
         echo2 "Split ${bamFile}"
         if ! isFile ${Prefix}.refarm.bam; then
-            split_primer_from_pbbam -p $PrimerSequence -o ${Prefix}.refarm.bam -t ${Threads} ${bamFile}
+            split_primer_from_pbbam -p $PrimerSequence -o ${Prefix}.refarm.bam -t ${Threads} ${bamFile} \
+            || echo2 "failed to split bam file ${bamFile}" error
         else
             echo2 "Skipping ${bamFile} because the output ${Prefix}.refarm.bam has existed" warning
         fi
+        # index bam file
+        echo2 "Index ${bamFile}"
+        if ! isFile ${Prefix}.refarm.bam.pbi; then
+            pbindex ${Prefix}.refarm.bam \
+            || echo2 "failed to index bam file ${Prefix}.refarm.bam" error
+        fi
+        # generate XML
+        echo2 "Create subreadsset.xml for ${bamFile}"
+        if ! isFile ${Prefix}.refarm.subreadset.xml; then 
+            dataset create --type SubreadSet --name ${Prefix}.${RANDOM} ${Prefix}.refarm.subreadset.xml ${Prefix}.refarm.bam
+        fi
+        
+        echo2 "Done with ${bamFile}"
     done
 fi
 let Step+=1
