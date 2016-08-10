@@ -63,7 +63,8 @@ set -eu -o pipefail
 # load modules #
 ################
 . ${PIPELINE_DIRECTORY}/bin/color.sh
-. ${PIPELINE_DIRECTORY}/bin/functions.sh # function definitions
+. ${PIPELINE_DIRECTORY}/bin/functions.sh
+. ${PIPELINE_DIRECTORY}/bin/config
 
 ########
 # Args #
