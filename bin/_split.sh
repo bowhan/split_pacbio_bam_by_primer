@@ -69,12 +69,16 @@ ${REQUIRED}[ required ]
                 2. [ Sequel ] subreads.bam
                 You can specify multiple inputs, each with its own -i tag.
                 Avoid using inputs with the same basename.
-
+        -N      Sample names of each input files, will be used in SMRTLink.
+                Each -N should pair with each -i
+                 
 ${OPTIONAL}[ optional ]
         -p      the custom smrtbell primer sequence, Default: ${DEFAULT_PRIMER}
         -o      Output folder, will create if not exist. Default: ${PWD}
         -t      Number of threads to use. Default: ${DEFAULT_NUM_THREADS}
-
+        -H      Hostname of the SMRTLink server, if this option is provided, the SMRTLink will attemp to import the output bam 
+        -P      Port number of the SMRTLink server
+        
 ${ADVANCED}[ advanced ]
         -D      use debug mode (bash -x). Default: off
 
@@ -87,28 +91,40 @@ echo -e "${FONT_COLOR_RESET}"
 ##########
 declare -a REQUIRED_PROGRAMS=('bax2bam' 'split_primer_from_pbbam' 'pbindex' 'dataset')
 declare -a Inputs=()
+declare -a Names=()
 
 #############################
 # ARGS reading and checking #
 #############################
-while getopts "hvi:p:o:t:D" OPTION; do
+while getopts "hvi:N:p:o:t:DH:P:" OPTION; do
     case $OPTION in
         h)  usage && exit 0 ;;
         v)  echo ${PACKAGE_NAME}::${MODULE_NAME} v${MODULE_VERSION} && exit 0;;
         i)  declare Input=$(readlink -f ${OPTARG});
             Inputs+=("${Input}")
             ;;
+        N)  Names+=( "${OPTARG}" );;
         p)  declare PrimerSequence=${OPTARG};;
         o)  declare OutputDir=${OPTARG};;
         t)  declare -i Threads=${OPTARG};;
+        H)  declare Hostname=${OPTARG};;
+        P)  declare -i Portnum=${OPTARG};;
         D)  set -x;;
         *)  usage && exit 1;;
     esac
 done
 
 [[ -z $Input ]] && usage && echo2 "Need do provide at least one input fl_nc fasta file with -i option" error
+[[ ${#Input[@]} -ne ${#Names[@]} ]] && echo2 "The numbers of -i and -N do not match" error
 [[ -z $PrimerSequence ]] && declare PrimerSequence=$DEFAULT_PRIMER && echo2 "You have not provide the pipeline with a custom smrtbell primer with -p, thus to use the default primer ${DEFAULT_PRIMER}" warning
 [[ -z $Threads ]] && declare -i Threads=${DEFAULT_NUM_THREADS}
+[[ ! -z ${Hostname} ]] && declare Upload=1;
+[[ ! -z ${Portnum} ]] && declare Upload=1;
+if [[ ${Upload} -eq 1 ]]; then
+    [[ -z ${Hostname} ]] && echo2 "In order to let SMRTLink to import the data, you will have to provide the -H option" error
+    [[ -z ${Portnum} ]]  && echo2 "In order to let SMRTLink to import the data, you will have to provide the -P option" error
+    REQUIRED_PROGRAMS+=( "dataset" "pbservice" )
+fi
 [[ -z $OutputDir ]] && OutputDir=${RANDOM}.out
 
 for file in "${Inputs[@]}"; do dirOrFileCheck $file; done
@@ -146,6 +162,7 @@ done
 let Step+=1
 
 echo2 "Begin to split bam files"
+declare -a refarmedBamFiles=()
 if [[ ! -f ${RUNUID}.${Step}.Done || ${RUNUID}.${Step}.Done -ot ${RUNUID}.$((Step-1)).Done ]]; then
     for bamFile in "${bamInputs[@]}"; do
         declare Prefix=$(basename ${bamFile%.subreads.bam})
@@ -163,13 +180,30 @@ if [[ ! -f ${RUNUID}.${Step}.Done || ${RUNUID}.${Step}.Done -ot ${RUNUID}.$((Ste
             pbindex ${Prefix}.refarm.bam \
             || echo2 "failed to index bam file ${Prefix}.refarm.bam" error
         fi
-        # generate XML
-        echo2 "Create subreadsset.xml for ${bamFile}"
-        if ! isFile ${Prefix}.refarm.subreadset.xml; then 
-            dataset create --type SubreadSet --name ${Prefix}.${RANDOM} ${Prefix}.refarm.subreadset.xml ${Prefix}.refarm.bam
+        refarmedBamFiles+=( ${Prefix}.refarm.bam )
+        echo2 "Done with ${bamFile}"
+    done # for bamFile in "${bamInputs[@]}";
+fi
+
+if [[ ${Upload} -eq 1 ]]; then
+     for i in $(seq 0 $((${#refarmedBamFiles[@]}-1))); do
+        declare bamFile=${refarmedBamFiles[$i]}
+        declare XmlFile=${bamFile%bam}subreadset.xml
+        declare Name=${Names[$i]}
+        
+        if ! isFile ${XmlFile}; then
+            echo2 "Generating XML file"
+            dataset create --type SubreadSet --name "${Name}" ${XmlFile} ${bamFile}
+        else
+            echo2 "Using previously generated XML file ${XmlFile}" warning 
         fi
         
-        echo2 "Done with ${bamFile}"
+        if ! isFile ${XmlFile}.uploaded; then
+            pbservice import-dataset --host ${Hostname} --port ${Portnum} ${XmlFile} \
+            && touch ${XmlFile}.uploaded
+        else
+            echo2 "Looks like the file ${XmlFile} has already been imported by SMRTLink" warning
+        fi
     done
 fi
 let Step+=1
