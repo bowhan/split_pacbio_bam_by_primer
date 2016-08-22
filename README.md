@@ -9,7 +9,7 @@ This is still under development
 ```bash
 git clone --recursive git@github.com:bowhan/split_pacbio_bam_by_primer.git
 mkdir -p split_pacbio_bam_by_primer/build && cd split_pacbio_bam_by_primer/build
-cmake .. && make
+cmake -DCMAKE_BUILD_TYPE=RELEASE .. && make
 # you might need to specify path to BOOST, such as
 BOOST_ROOT=$HOME/.linuxbrew/Cellar/boost/1.60.0_2 cmake .. && make
 ```
@@ -41,5 +41,25 @@ split_primer_from_pbbam \
     -p ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT \
     -t 8 \
     -o out.subreads.bam \
+    test.subreads.bam
+
+# advanced usage:
+# -m: Reads with SW-score lower than 70 will be dumped
+# -f: If the SW-score difference between the two best alignments are
+#     lower than 10, this read is dumped
+# -M: score for match in SW alignments
+# -S: penalty (positive integer) for a mismatch in SW alignments
+# -O: gap open penalty (positive integer)
+# -E: gap extension penalty (positive integer)
+split_primer_from_pbbam \
+    -p ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT \
+    -t 8 \
+    -o out.subreads.bam \
+    -m 70 \
+    -f 10 \
+    -M 2 \
+    -S 1 \
+    -O 3 \
+    -E 1 \
     test.subreads.bam
 ```
