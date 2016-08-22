@@ -145,8 +145,7 @@ public:
         , match_score_(other.match_score_)
         , mismatch_penalty_(other.mismatch_penalty_)
         , gap_open_penalty_(other.gap_open_penalty_)
-        , gap_ext_penalty_(other.gap_ext_penalty_)
-    {}
+        , gap_ext_penalty_(other.gap_ext_penalty_) {}
 
     BamSplitter& operator=(const BamSplitter&) = delete;
 
@@ -172,7 +171,21 @@ public:
                 // filter
                 if (alignment.sw_score < min_sw_score_
                     || alignment.sw_score - alignment.sw_score_next_best < min_sw_diff_) {
-                    cerr << "skipping:\t" << record.Sequence() << endl;
+                    #ifndef NDEBUG
+                    if (alignment.sw_score < min_sw_score_) {
+                        fprintf(stderr
+                                , "[1]\t%d\t%d\t%s\n"
+                                , alignment.sw_score
+                                , alignment.sw_score_next_best
+                                , record.Sequence().c_str());
+                    } else {
+                        fprintf(stderr
+                                , "[2]\t%d\t%d\t%s\n"
+                                , alignment.sw_score
+                                , alignment.sw_score_next_best
+                                , record.Sequence().c_str());
+                    }
+                    #endif
                     continue;
                 }
                 // fix name
