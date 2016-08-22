@@ -6,6 +6,41 @@
 #include <boost/utility/string_ref.hpp>
 #include "kernel_color.hpp"
 
+#ifndef DEFAULT_PRIMER_SEQ
+#define DEFAULT_PRIMER_SEQ "ATCTCTCTCAATTTTTTTTTTTTTTTTTTTTTTTAAGAGAGAGAT"
+#endif
+
+#ifndef DEFAULT_NUM_THREADS
+#define DEFAULT_NUM_THREADS "4"
+#endif
+
+#ifndef DEFAULT_BULK_SIZE
+#define DEFAULT_BULK_SIZE "500"
+#endif
+
+#ifndef DEFAULT_MIN_SW_SCORE
+#define DEFAULT_MIN_SW_SCORE "40"
+#endif
+
+#ifndef DEFAULT_MIN_SW_DIFF
+#define DEFAULT_MIN_SW_DIFF "8"
+#endif
+
+#ifndef DEFAULT_SW_MATCH_SCORE
+#define DEFAULT_SW_MATCH_SCORE "2"
+#endif
+
+#ifndef DEFAULT_SW_MISMATCH_PENALTY
+#define DEFAULT_SW_MISMATCH_PENALTY "2"
+#endif
+
+#ifndef DEFAULT_SW_GAP_OPEN_PENALTY
+#define DEFAULT_SW_GAP_OPEN_PENALTY "3"
+#endif
+
+#ifndef DEFAULT_SW_GAP_EXT_PENALTY
+#define DEFAULT_SW_GAP_EXT_PENALTY "1"
+#endif
 
 using StringView = boost::string_ref;
 
