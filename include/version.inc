@@ -1,8 +1,8 @@
 #pragma once
 
 #define PROG_MAJOR_VERSION 0
-#define PROG_MINOR_VERSION 0
-#define PROG_PATCH_VERSION 2
+#define PROG_MINOR_VERSION 1
+#define PROG_PATCH_VERSION 0
 
 #ifndef TOSTRING
 #define _TOSTRING(x) #x
