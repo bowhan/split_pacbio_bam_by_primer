@@ -102,15 +102,17 @@ class Segment(object):
     Represent a polymerase read, which include multiple read of insert
     some of the ROI contains to adaptor to be removed
     '''
-    __slots__ = ["run_name", "zmw", "intervals", "seqs"]
+    __slots__ = ["run_name", "zmw", "intervals", "seqs", "processed"]
 
     def __init__(self, sam_query):
         self.run_name, zmw, tmp = sam_query.qname.split('/')
         self.zmw = int(zmw)
         self.intervals = []
         self.seqs = []
+        self.processed = []
         self.intervals.append(Interval.from_list(map(int, tmp.split('_'))))
         self.seqs.append(sam_query.query_sequence)
+        self.processed.append(False)
 
     def insert(self, new_seg):
         new_interval = new_seg.intervals[0]
@@ -121,17 +123,23 @@ class Segment(object):
             i += 1
         self.intervals.insert(i, new_interval)
         self.seqs.insert(i, new_seg.seqs[0])
+        self.processed.insert(i, False)
 
     def substract(self, r):
         l = []
         s = []
+        # p = []
         i = 0
         while i < len(self.intervals):
             interval = self.intervals[i]
             if interval.overlap(r):
+                j = i
+                self.processed.pop(i)
                 for frag in interval.substract(r):
                     l.append(frag)
                     s.append(self.seqs[i][frag.start - interval.start: frag.end - interval.start])
+                    self.processed.insert(j, True)
+                    j += 1
             else:
                 l.append(interval)
                 s.append(self.seqs[i])
@@ -139,14 +147,15 @@ class Segment(object):
         self.intervals = l  # shouldn't need to do sorting again
         self.seqs = s
 
-    def substr(self):
-        for seq in self.seqs:
-            yield seq
+    def get_subseqs(self):
+        for seq, processed in zip(self.seqs, self.processed):
+            if processed:
+                yield seq
 
 
 def load_original_sam(sam_file):
     h = {}
-    with pysam.AlignmentFile(sam_file, 'r') as f:
+    with pysam.AlignmentFile(sam_file, 'r', check_sq=False) as f:
         for sam_entry in f:
             seg = Segment(sam_entry)
             if seg.zmw in h:
@@ -157,7 +166,7 @@ def load_original_sam(sam_file):
 
 
 def load_processed_sam(sam_file, hash):
-    for sam_entry in pysam.AlignmentFile(sam_file, 'r'):
+    for sam_entry in pysam.AlignmentFile(sam_file, 'r', check_sq=False):
         seg = Segment(sam_entry)
         if seg.zmw in hash:
             hash[seg.zmw].substract(seg.intervals[0])
@@ -167,7 +176,7 @@ def load_processed_sam(sam_file, hash):
 
 def output(data):
     for key, seg in data.items():
-        for i in seg.substr():
+        for i in seg.get_subseqs():
             print i
 
 
