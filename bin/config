@@ -1,0 +1,2 @@
+declare -rx Hostname=smrtlink-beta
+declare -rx Portnum=8081
