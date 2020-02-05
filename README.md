@@ -2,11 +2,11 @@
 
 ## Pre-requisite
 
-    1. Linux environment
-    2. C++ compiler that supports C++11
-    3. Boost `apt-get install -y libboost-all-dev`
-    4. [Anaconda](https://www.anaconda.com/)
-    5. pbbam `conda install -c bioconda pbbam`
+1. Linux environment
+2. C++ compiler that supports C++11
+3. Boost `apt-get install -y libboost-all-dev`
+4. [Anaconda](https://www.anaconda.com/)
+5. pbbam `conda install -c bioconda pbbam`
 
 ### Install
 
