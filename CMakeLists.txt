@@ -11,7 +11,7 @@ endforeach ()
 set(VERSION "${_MAJOR}.${_MINOR}.${_PATCH}")
 
 # project
-project(SPLIT_PRIMER_FROM_PBBAM VERSION ${VERSION} LANGUAGES CXX)
+project(SPLIT_PRIMER_FROM_PBBAM VERSION ${VERSION} LANGUAGES C CXX)
 string(TOLOWER ${CMAKE_PROJECT_NAME} MAIN_EXE_NAME)
 
 # flags
@@ -34,13 +34,13 @@ find_package(Boost COMPONENTS filesystem REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(HTS REQUIRED IMPORTED_TARGET "htslib")
 pkg_search_module(PBBAM REQUIRED IMPORTED_TARGET "pbbam")
-# 4. sswlib in submodule
-add_subdirectory("${THIRD_PARTY_DIR}/Complete-Striped-Smith-Waterman-Library" external/ssw/build)
 
 # exe
 add_executable(${MAIN_EXE_NAME}
         ${SOURCE_DIR}/main.cpp
         ${SOURCE_DIR}/common.cpp
+        ${SOURCE_DIR}/impl/ssw/ssw_impl.c
+        ${SOURCE_DIR}/Ssw.cpp
         )
 # include
 target_include_directories(${MAIN_EXE_NAME}
@@ -56,7 +56,6 @@ target_link_libraries(${MAIN_EXE_NAME}
         PkgConfig::PBBAM
         ${Boost_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
-        sswlib
         )
 # install
 install(TARGETS ${MAIN_EXE_NAME}

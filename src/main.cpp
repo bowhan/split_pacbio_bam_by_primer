@@ -3,18 +3,15 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <sstream>
 #include <thread>
-#include <cassert>
 
-#include <boost/any.hpp>
 #include <boost/filesystem.hpp>
 
 #include <pbbam/BamReader.h>
 #include <pbbam/BamRecord.h>
 #include <pbbam/BamWriter.h>
 
-#include <Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h>
+#include "Ssw.h"
 
 #include "common.hpp"
 #include "version.inc"
@@ -152,12 +149,49 @@ public:
 
     BamSplitter& operator=(const BamSplitter&) = delete;
 
+    void _prepare_scoring_matrix(int8_t *scoring_matrix) {
+        int i = 0;
+        scoring_matrix[i++] = match_score_;       /* A-A */
+        scoring_matrix[i++] = -mismatch_penalty_; /* A-C */
+        scoring_matrix[i++] = -mismatch_penalty_; /* A-G */
+        scoring_matrix[i++] = -mismatch_penalty_; /* A-T */
+        scoring_matrix[i++] = -mismatch_penalty_; /* A-N */
+
+        scoring_matrix[i++] = -mismatch_penalty_; /* C-A */
+        scoring_matrix[i++] = match_score_;       /* C-C */
+        scoring_matrix[i++] = -mismatch_penalty_; /* C-G */
+        scoring_matrix[i++] = -mismatch_penalty_; /* C-T */
+        scoring_matrix[i++] = -mismatch_penalty_; /* C-N */
+
+        scoring_matrix[i++] = -mismatch_penalty_; /* G-A */
+        scoring_matrix[i++] = -mismatch_penalty_; /* G-C */
+        scoring_matrix[i++] = match_score_;       /* G-G */
+        scoring_matrix[i++] = -mismatch_penalty_; /* G-T */
+        scoring_matrix[i++] = -mismatch_penalty_; /* G-N */
+
+        scoring_matrix[i++] = -mismatch_penalty_; /* T-A */
+        scoring_matrix[i++] = -mismatch_penalty_; /* T-C */
+        scoring_matrix[i++] = -mismatch_penalty_; /* T-G */
+        scoring_matrix[i++] = match_score_;       /* T-T */
+        scoring_matrix[i++] = -mismatch_penalty_; /* T-N */
+
+        scoring_matrix[i++] = match_score_ - 1;     /* N-A */
+        scoring_matrix[i++] = match_score_ - 1;     /* N-C */
+        scoring_matrix[i++] = match_score_ - 1;     /* N-G */
+        scoring_matrix[i++] = match_score_ - 1;     /* N-T */
+        scoring_matrix[i] = -mismatch_penalty_;   /* N-N */
+    }
+
     void operator()() {
         vector<BamRecord> outputs;
         outputs.reserve(queue_.Capacity());
         string fullname;
         int left_start, right_end;
-        StripedSmithWaterman::Aligner aligner{match_score_, mismatch_penalty_, gap_open_penalty_, gap_ext_penalty_};
+        int8_t scoring_matrix[25];
+        _prepare_scoring_matrix(scoring_matrix);
+        StripedSmithWaterman::Aligner aligner{};
+        aligner.RebuildScoreMatrix(scoring_matrix, 5);
+
         StripedSmithWaterman::Filter filter;
         StripedSmithWaterman::Alignment alignment;
         // begin process data
@@ -170,6 +204,7 @@ public:
                               , record.Sequence().size()
                               , filter
                               , &alignment
+                              , record.Sequence().size() << 1
                 );
                 // filter
                 if (alignment.sw_score < min_sw_score_
@@ -257,31 +292,31 @@ int SplitterMT(const argument_type& args) {
     return EXIT_SUCCESS;
 }
 
-argument_type ArgumentParse(int argc, char** argv) {
+argument_type ArgumentParse(int argc, char **argv) {
     string usage =
         KERNAL_GREEN
-            "This program split pacBio bam files based on a custom smrtbell sequence.\n"
-            "version: v"
-            PROGRAM_VERSION
-            "\nusage: [options] input.bam\n\n"
-            "options:\n"
-            KERNAL_RED "\n[required]\n"
-            "\tinput.bam\n"
-            KERNAL_CYAN
-            "\n[optional]\n"
-            "\t-o      output bam filename, if not provided, the prefix of input bam + refarm.bam will be used\n"
-            "\t-p      primer sequence, default: " DEFAULT_PRIMER_SEQ "\n"
-            "\t-t      number of threads to use, default: " DEFAULT_NUM_THREADS "\n"
-            KERNAL_YELLOW
-            "\n[advanced]\n"
-            "\t-b      bulk of records sent to each thread every time, default: " DEFAULT_BULK_SIZE "\n"
-            "\t-m      minimal Smith-Waterman score between read and adaptor, default: " DEFAULT_MIN_SW_SCORE "\n"
-            "\t-f      minimal Smith-Waterman score allowed between best and second-best alignments, default: " DEFAULT_MIN_SW_DIFF "\n"
-            "\t-M      Score for a match, default: " DEFAULT_SW_MATCH_SCORE "\n"
-            "\t-S      Penalty for a mismatch, default: " DEFAULT_SW_MISMATCH_PENALTY "\n"
-            "\t-O      Penalty for a gap opening, default: " DEFAULT_SW_GAP_OPEN_PENALTY "\n"
-            "\t-E      Penalty for a gap extension, default: " DEFAULT_SW_GAP_EXT_PENALTY "\n"
-            KERNAL_RESET;
+        "This program split pacBio bam files based on a custom smrtbell sequence.\n"
+        "version: v"
+        PROGRAM_VERSION
+        "\nusage: [options] input.bam\n\n"
+        "options:\n"
+        KERNAL_RED "\n[required]\n"
+        "\tinput.bam\n"
+        KERNAL_CYAN
+        "\n[optional]\n"
+        "\t-o      output bam filename, if not provided, the prefix of input bam + refarm.bam will be used\n"
+        "\t-p      primer sequence, default: " DEFAULT_PRIMER_SEQ "\n"
+        "\t-t      number of threads to use, default: " DEFAULT_NUM_THREADS "\n"
+        KERNAL_YELLOW
+        "\n[advanced]\n"
+        "\t-b      bulk of records sent to each thread every time, default: " DEFAULT_BULK_SIZE "\n"
+        "\t-m      minimal Smith-Waterman score between read and adaptor, default: " DEFAULT_MIN_SW_SCORE "\n"
+        "\t-f      minimal Smith-Waterman score allowed between best and second-best alignments, default: " DEFAULT_MIN_SW_DIFF "\n"
+        "\t-M      Score for a match, default: " DEFAULT_SW_MATCH_SCORE "\n"
+        "\t-S      Penalty for a mismatch, default: " DEFAULT_SW_MISMATCH_PENALTY "\n"
+        "\t-O      Penalty for a gap opening, default: " DEFAULT_SW_GAP_OPEN_PENALTY "\n"
+        "\t-E      Penalty for a gap extension, default: " DEFAULT_SW_GAP_EXT_PENALTY "\n"
+        KERNAL_RESET;
 
     argument_type arguments;
     int c;
@@ -346,7 +381,7 @@ argument_type ArgumentParse(int argc, char** argv) {
     return arguments;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     auto args = ArgumentParse(argc, argv);
     return SplitterMT(args);
 }
