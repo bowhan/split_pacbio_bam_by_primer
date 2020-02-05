@@ -9,28 +9,32 @@ foreach (level MAJOR MINOR PATCH)
 endforeach ()
 
 set(VERSION "${_MAJOR}.${_MINOR}.${_PATCH}")
+
+# project
 project(SPLIT_PRIMER_FROM_PBBAM VERSION ${VERSION} LANGUAGES CXX)
 string(TOLOWER ${CMAKE_PROJECT_NAME} MAIN_EXE_NAME)
 
+# flags
 set(CMAKE_CXX_STANDARD 11)
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# project-specific variables
 set(${CMAKE_PROJECT_NAME}_ROOT_DIR ${PROJECT_SOURCE_DIR})
 set(INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
 
+# required packages
+# 1. threads
 find_package(Threads REQUIRED)
-find_package(Intellia REQUIRED)
-
+# 2. boost
 SET(Boost_USE_MULTITHREADED ON)
 find_package(Boost COMPONENTS filesystem REQUIRED)
-
+# 3. search for htslib and pbbam with pkg-config
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(HTSLIB REQUIRED IMPORTED_TARGET "htslib")
-pkg_check_modules(PBBAM REQUIRED IMPORTED_TARGET "pbbam")
-
-
+pkg_search_module(HTS REQUIRED IMPORTED_TARGET "htslib")
+pkg_search_module(PBBAM REQUIRED IMPORTED_TARGET "pbbam")
+# 4. sswlib in submodule
 add_subdirectory("${THIRD_PARTY_DIR}/Complete-Striped-Smith-Waterman-Library" external/ssw/build)
 
 # exe
@@ -38,7 +42,7 @@ add_executable(${MAIN_EXE_NAME}
         ${SOURCE_DIR}/main.cpp
         ${SOURCE_DIR}/common.cpp
         )
-#
+# include
 target_include_directories(${MAIN_EXE_NAME}
         PUBLIC
         ${INCLUDE_DIRS}
@@ -46,23 +50,14 @@ target_include_directories(${MAIN_EXE_NAME}
         ${PBBAM_INCLUDEDIR}
         ${THIRD_PARTY_DIR}
         )
-
-
-# link
-target_link_directories(${MAIN_EXE_NAME}
-        PUBLIC
-        ${HTSLIB_LIBRARY_DIRS}
-        ${PBBAM_LIBRARY_DIRS}
-        )
-
+# linking
 target_link_libraries(${MAIN_EXE_NAME}
-        ${HTSLIB_LIBRARIES}
-        ${PBBAM_LIBRARIES}
+        PkgConfig::HTS
+        PkgConfig::PBBAM
         ${Boost_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
         sswlib
         )
-
 # install
 install(TARGETS ${MAIN_EXE_NAME}
         RUNTIME DESTINATION bin
