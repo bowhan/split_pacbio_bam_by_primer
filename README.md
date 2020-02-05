@@ -1,22 +1,26 @@
-## Split PacBio subreads BAM file using a custom smrtbell primer sequence
-This is still under development
+# Split PacBio subreads BAM file using a custom smrtbell primer sequence
 
 ## Pre-requisite
-1. Linux environment
-2. C++ compiler that supports C++11; Boost library
+
+    1. Linux environment
+    2. C++ compiler that supports C++11
+    3. Boost `apt-get install -y libboost-all-dev`
+    4. [Anaconda](https://www.anaconda.com/)
+    5. pbbam `conda install -c bioconda pbbam`
 
 ### Install
+
 ```bash
 git clone --recursive git@github.com:bowhan/split_pacbio_bam_by_primer.git
 mkdir -p split_pacbio_bam_by_primer/build && cd split_pacbio_bam_by_primer/build
-cmake -DCMAKE_BUILD_TYPE=RELEASE .. && make
-# you might need to specify path to BOOST, such as
-BOOST_ROOT=$HOME/.linuxbrew/Cellar/boost/1.60.0_2 cmake .. && make
+PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:~/anaconda3/lib/pkgconfig/ cmake -DCMAKE_BUILD_TYPE=RELEASE .. && make -j4 
+make install || sudo make install
 ```
 
 ### Usage
 
 Shell pipeline usage:
+
 ```bash
 # You can provide arbitrary number of inputs from either RS II or Seqeuel
 # in the following example,
@@ -31,6 +35,7 @@ split_pacbio_bam.sh split \
 ```
 
 C++ program usage:
+
 ```bash
 # -p AT...AT: custom smrtbell sequence
 # -t 8 : use 8 threads

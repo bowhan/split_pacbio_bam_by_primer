@@ -6,12 +6,14 @@
 #include <sstream>
 #include <thread>
 #include <cassert>
+
 #include <boost/any.hpp>
 #include <boost/filesystem.hpp>
-#include <pbbam/BamFile.h>
+
 #include <pbbam/BamReader.h>
 #include <pbbam/BamRecord.h>
 #include <pbbam/BamWriter.h>
+
 #include <Complete-Striped-Smith-Waterman-Library/src/ssw_cpp.h>
 
 #include "common.hpp"
@@ -35,6 +37,7 @@ enum Arguments {
     , SW_GAP_EXT_PENALTY
     , SIZE
 };
+
 using argument_type = array<string, Arguments::SIZE>;
 
 template <bool is_left>
