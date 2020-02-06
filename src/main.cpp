@@ -81,6 +81,13 @@ void SplitBam(const BamRecord& record
     } else {
         newtags["ip"] = decltype(ipd){ipd.cbegin() + alignment.ref_end + 1, ipd.cend()};
     }
+
+    auto pw = record.PulseWidth().Encode();
+    if (is_left) {
+        newtags["pw"] = decltype(pw){pw.cbegin(), pw.cbegin() + alignment.ref_begin};
+    } else {
+        newtags["pw"] = decltype(pw){pw.cbegin() + alignment.ref_end + 1, pw.cend()};
+    }
     outbam.Impl().Tags(newtags);
 }
 
@@ -228,12 +235,12 @@ public:
                     Utils::Error("failed to convert start or end");
                 }
                 // fix sequence
-                if (alignment.ref_begin > 0) {
+                if (alignment.ref_begin > 100) {
                     BamRecord l(header_);
                     SplitBam<true>(record, l, tokens[0], tokens[1], left_start, right_end, alignment);
                     outputs.push_back(std::move(l));
                 }
-                if (left_start + alignment.ref_end + 1 < right_end) {
+                if (left_start + alignment.ref_end + 101 < right_end) {
                     BamRecord r(header_);
                     SplitBam<false>(record, r, tokens[0], tokens[1], left_start, right_end, alignment);
                     outputs.push_back(std::move(r));
