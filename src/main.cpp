@@ -66,15 +66,8 @@ void SplitBam(const BamRecord& record
     const auto& original_tags = record.Impl().Tags();
     TagCollection newtags;
     // direct copy tags
-    for (auto t  : {"RG", "np", "rq", "sn", "zm"}) {
+    for (auto t  : {"np", "rq", "sn", "zm", "RG"}) {
         newtags[t] = original_tags.at(t);
-    }
-    // tags need to substr
-    for (auto t : {"dq", "dt", "iq", "mq", "sq"}) {
-        if (is_left)
-            newtags[t] = original_tags.at(t).ToString().substr(0, alignment.ref_begin);
-        else
-            newtags[t] = original_tags.at(t).ToString().substr(alignment.ref_end + 1);
     }
     // special tag
     newtags["qs"] = (is_left ? left_start : left_start + alignment.ref_end + 1);
@@ -82,11 +75,11 @@ void SplitBam(const BamRecord& record
     newtags["cx"] = original_tags.at("cx").ToUInt8()
         | (is_left ? PacBio::BAM::LocalContextFlags::ADAPTER_BEFORE : PacBio::BAM::LocalContextFlags::ADAPTER_AFTER);
     // TODO: this can be more efficient
-    auto vec = record.IPD().Encode();
+    auto ipd = record.IPD().Encode();
     if (is_left) {
-        newtags["ip"] = decltype(vec){vec.cbegin(), vec.cbegin() + alignment.ref_begin};
+        newtags["ip"] = decltype(ipd){ipd.cbegin(), ipd.cbegin() + alignment.ref_begin};
     } else {
-        newtags["ip"] = decltype(vec){vec.cbegin() + alignment.ref_end + 1, vec.cend()};
+        newtags["ip"] = decltype(ipd){ipd.cbegin() + alignment.ref_end + 1, ipd.cend()};
     }
     outbam.Impl().Tags(newtags);
 }
@@ -155,30 +148,30 @@ public:
         scoring_matrix[i++] = -mismatch_penalty_; /* A-C */
         scoring_matrix[i++] = -mismatch_penalty_; /* A-G */
         scoring_matrix[i++] = -mismatch_penalty_; /* A-T */
-        scoring_matrix[i++] = -mismatch_penalty_; /* A-N */
+        scoring_matrix[i++] = match_score_ >> 1; /* A-N */
 
         scoring_matrix[i++] = -mismatch_penalty_; /* C-A */
         scoring_matrix[i++] = match_score_;       /* C-C */
         scoring_matrix[i++] = -mismatch_penalty_; /* C-G */
         scoring_matrix[i++] = -mismatch_penalty_; /* C-T */
-        scoring_matrix[i++] = -mismatch_penalty_; /* C-N */
+        scoring_matrix[i++] = match_score_ >> 1; /* C-N */
 
         scoring_matrix[i++] = -mismatch_penalty_; /* G-A */
         scoring_matrix[i++] = -mismatch_penalty_; /* G-C */
         scoring_matrix[i++] = match_score_;       /* G-G */
         scoring_matrix[i++] = -mismatch_penalty_; /* G-T */
-        scoring_matrix[i++] = -mismatch_penalty_; /* G-N */
+        scoring_matrix[i++] = match_score_ >> 1; /* G-N */
 
         scoring_matrix[i++] = -mismatch_penalty_; /* T-A */
         scoring_matrix[i++] = -mismatch_penalty_; /* T-C */
         scoring_matrix[i++] = -mismatch_penalty_; /* T-G */
         scoring_matrix[i++] = match_score_;       /* T-T */
-        scoring_matrix[i++] = -mismatch_penalty_; /* T-N */
+        scoring_matrix[i++] = match_score_ >> 1; /* T-N */
 
-        scoring_matrix[i++] = match_score_ - 1;     /* N-A */
-        scoring_matrix[i++] = match_score_ - 1;     /* N-C */
-        scoring_matrix[i++] = match_score_ - 1;     /* N-G */
-        scoring_matrix[i++] = match_score_ - 1;     /* N-T */
+        scoring_matrix[i++] = match_score_ >> 1;     /* N-A */
+        scoring_matrix[i++] = match_score_ >> 1;     /* N-C */
+        scoring_matrix[i++] = match_score_ >> 1;     /* N-G */
+        scoring_matrix[i++] = match_score_ >> 1;     /* N-T */
         scoring_matrix[i] = -mismatch_penalty_;   /* N-N */
     }
 
@@ -201,7 +194,8 @@ public:
         while (!data.empty()) {
             for (auto& record : data) {
                 alignment.Clear();
-                aligner.SetReferenceSequence(record.Sequence().c_str(), record.Sequence().size());
+                aligner.SetReferenceSequence(record.Sequence().c_str()
+                                             , record.Sequence().size());
                 aligner.Align(primer_seq_.c_str()
                               , filter
                               , &alignment
