@@ -190,8 +190,10 @@ public:
         int8_t scoring_matrix[25];
         _prepare_scoring_matrix(scoring_matrix);
         StripedSmithWaterman::Aligner aligner{};
+        aligner.Clear();
         aligner.RebuildScoreMatrix(scoring_matrix, 5);
-
+        aligner.SetGapPenalty(static_cast<uint8_t>(gap_open_penalty_)
+                              , static_cast<uint8_t>(gap_ext_penalty_));
         StripedSmithWaterman::Filter filter;
         StripedSmithWaterman::Alignment alignment;
         // begin process data
@@ -199,12 +201,10 @@ public:
         while (!data.empty()) {
             for (auto& record : data) {
                 alignment.Clear();
+                aligner.SetReferenceSequence(record.Sequence().c_str(), record.Sequence().size());
                 aligner.Align(primer_seq_.c_str()
-                              , record.Sequence().c_str()
-                              , record.Sequence().size()
                               , filter
                               , &alignment
-                              , record.Sequence().size() << 1
                 );
                 // filter
                 if (alignment.sw_score < min_sw_score_

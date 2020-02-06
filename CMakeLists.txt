@@ -52,6 +52,7 @@ target_link_libraries(${MAIN_EXE_NAME}
         PkgConfig::HTS
         PkgConfig::PBBAM
         ${Boost_LIBRARIES}
+        boost_system
         boost_filesystem  # have to explicitly add it for some reason
         ${CMAKE_THREAD_LIBS_INIT}
         )
