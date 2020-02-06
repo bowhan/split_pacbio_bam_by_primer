@@ -28,8 +28,7 @@ set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/third-party)
 # 1. threads
 find_package(Threads REQUIRED)
 # 2. boost
-SET(Boost_USE_MULTITHREADED ON)
-find_package(Boost COMPONENTS filesystem REQUIRED)
+find_package(Boost REQUIRED)
 # 3. search for htslib and pbbam with pkg-config
 find_package(PkgConfig REQUIRED)
 pkg_search_module(HTS REQUIRED IMPORTED_TARGET "htslib")
@@ -46,15 +45,14 @@ add_executable(${MAIN_EXE_NAME}
 target_include_directories(${MAIN_EXE_NAME}
         PUBLIC
         ${INCLUDE_DIRS}
-        ${HTSLIB_INCLUDEDIR}
-        ${PBBAM_INCLUDEDIR}
-        ${THIRD_PARTY_DIR}
+        ${Boost_INCLUDE_DIR}
         )
 # linking
 target_link_libraries(${MAIN_EXE_NAME}
         PkgConfig::HTS
         PkgConfig::PBBAM
         ${Boost_LIBRARIES}
+        boost_filesystem  # have to explicitly add it for some reason
         ${CMAKE_THREAD_LIBS_INIT}
         )
 # install
