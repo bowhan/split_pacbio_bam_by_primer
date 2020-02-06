@@ -32,6 +32,7 @@ enum Arguments {
     , SW_MISMATCH_PENALTY
     , SW_GAP_OPEN_PENALTY
     , SW_GAP_EXT_PENALTY
+    , MIN_LENGTH_REPORT
     , SIZE
 };
 
@@ -104,6 +105,7 @@ private:
     uint8_t mismatch_penalty_;
     uint8_t gap_open_penalty_;
     uint8_t gap_ext_penalty_;
+    int min_len_;
     queue_type& queue_;
     BamWriter& writer_;
     const BamHeader& header_;
@@ -120,6 +122,7 @@ public:
                 , uint8_t mismatch_penalty
                 , uint8_t gap_open_penalty
                 , uint8_t gap_ext_penalty
+                , int minlen
                )
         : queue_(q)
           , writer_(w)
@@ -130,11 +133,12 @@ public:
           , match_score_(match_score)
           , mismatch_penalty_(mismatch_penalty)
           , gap_open_penalty_(gap_open_penalty)
-          , gap_ext_penalty_(gap_ext_penalty) {}
+          , gap_ext_penalty_(gap_ext_penalty)
+          , min_len_{minlen} {}
 
     BamSplitter(const BamSplitter&) = delete;
 
-    BamSplitter(BamSplitter&& other)
+    BamSplitter(BamSplitter&& other) noexcept
         :
         queue_(other.queue_)
         , writer_(other.writer_)
@@ -145,7 +149,8 @@ public:
         , match_score_(other.match_score_)
         , mismatch_penalty_(other.mismatch_penalty_)
         , gap_open_penalty_(other.gap_open_penalty_)
-        , gap_ext_penalty_(other.gap_ext_penalty_) {}
+        , gap_ext_penalty_(other.gap_ext_penalty_)
+        , min_len_(other.min_len_) {}
 
     BamSplitter& operator=(const BamSplitter&) = delete;
 
@@ -235,12 +240,12 @@ public:
                     Utils::Error("failed to convert start or end");
                 }
                 // fix sequence
-                if (alignment.ref_begin > 100) {
+                if (alignment.ref_begin > min_len_) {
                     BamRecord l(header_);
                     SplitBam<true>(record, l, tokens[0], tokens[1], left_start, right_end, alignment);
                     outputs.push_back(std::move(l));
                 }
-                if (left_start + alignment.ref_end + 101 < right_end) {
+                if (left_start + alignment.ref_end + 1 + min_len_ < right_end) {
                     BamRecord r(header_);
                     SplitBam<false>(record, r, tokens[0], tokens[1], left_start, right_end, alignment);
                     outputs.push_back(std::move(r));
@@ -262,6 +267,7 @@ public:
 int SplitterMT(const argument_type& args) {
     auto out_file_name = args[Arguments::OUTPUT];
     auto primer_seq = args[Arguments::PRIMER];
+    auto min_len_allowed = static_cast<int>(stoi(args[Arguments::MIN_LENGTH_REPORT]));
     auto min_sw_score = static_cast<uint16_t>(stoi(args[Arguments::MIN_SW_SCORE]));
     auto max_sw_diff = static_cast<uint16_t>(stoi(args[Arguments::MIN_SW_SCORE_DIFF]));
     auto match_score = static_cast<uint8_t>(stoi(args[Arguments::SW_MATCH_SCORE]));
@@ -283,7 +289,7 @@ int SplitterMT(const argument_type& args) {
     vector<thread> threads;
     for (int i = 0; i < numThreads; ++i) {
         threads.emplace_back(BamSplitter{queue, out_fh, primer_seq, header, min_sw_score, max_sw_diff, match_score
-                                         , mismatch_penalty, gap_open_penalty, gap_ext_penalty});
+                                         , mismatch_penalty, gap_open_penalty, gap_ext_penalty, min_len_allowed});
     }
     for (auto& t : threads) {
         if (t.joinable()) {
@@ -311,6 +317,7 @@ argument_type ArgumentParse(int argc, char **argv) {
         KERNAL_YELLOW
         "\n[advanced]\n"
         "\t-b      bulk of records sent to each thread every time, default: " DEFAULT_BULK_SIZE "\n"
+        "\t-l      minimal length to report in the output bam, default: " DEFAULT_MIN_LEN_REPORT "\n"
         "\t-m      minimal Smith-Waterman score between read and adaptor, default: " DEFAULT_MIN_SW_SCORE "\n"
         "\t-f      minimal Smith-Waterman score allowed between best and second-best alignments, default: " DEFAULT_MIN_SW_DIFF "\n"
         "\t-M      Score for a match, default: " DEFAULT_SW_MATCH_SCORE "\n"
@@ -321,30 +328,44 @@ argument_type ArgumentParse(int argc, char **argv) {
 
     argument_type arguments;
     int c;
-    while ((c = getopt(argc, argv, "p:o:t:b:f:m:M:S:O:E:h")) != -1) {
+    while ((c = getopt(argc, argv, "p:o:t:b:l:f:m:M:S:O:E:h")) != -1) {
         switch (c) {
-            case 'p':arguments[Arguments::PRIMER] = optarg;
+            case 'p':
+                arguments[Arguments::PRIMER] = optarg;
                 break;
-            case 'o':arguments[Arguments::OUTPUT] = optarg;
+            case 'o':
+                arguments[Arguments::OUTPUT] = optarg;
                 break;
-            case 't':arguments[Arguments::THREADS] = optarg;
+            case 't':
+                arguments[Arguments::THREADS] = optarg;
                 break;
-            case 'b':arguments[Arguments::BULKSIZE] = optarg;
+            case 'b':
+                arguments[Arguments::BULKSIZE] = optarg;
                 break;
-            case 'f':arguments[Arguments::MIN_SW_SCORE_DIFF] = optarg;
+            case 'l':
+                arguments[Arguments::MIN_LENGTH_REPORT] = optarg;
                 break;
-            case 'm':arguments[Arguments::MIN_SW_SCORE] = optarg;
+            case 'f':
+                arguments[Arguments::MIN_SW_SCORE_DIFF] = optarg;
                 break;
-            case 'M':arguments[Arguments::SW_MATCH_SCORE] = optarg;
+            case 'm':
+                arguments[Arguments::MIN_SW_SCORE] = optarg;
                 break;
-            case 'S':arguments[Arguments::SW_MISMATCH_PENALTY] = optarg;
+            case 'M':
+                arguments[Arguments::SW_MATCH_SCORE] = optarg;
                 break;
-            case 'O':arguments[Arguments::SW_GAP_OPEN_PENALTY] = optarg;
+            case 'S':
+                arguments[Arguments::SW_MISMATCH_PENALTY] = optarg;
                 break;
-            case 'E':arguments[Arguments::SW_GAP_EXT_PENALTY] = optarg;
+            case 'O':
+                arguments[Arguments::SW_GAP_OPEN_PENALTY] = optarg;
+                break;
+            case 'E':
+                arguments[Arguments::SW_GAP_EXT_PENALTY] = optarg;
                 break;
             case 'h':
-            default:cerr << usage;
+            default:
+                cerr << usage;
                 exit(EXIT_FAILURE);
         }
     }
@@ -365,6 +386,9 @@ argument_type ArgumentParse(int argc, char **argv) {
     if (arguments[Arguments::PRIMER].empty()) { arguments[Arguments::PRIMER] = DEFAULT_PRIMER_SEQ; }
     if (arguments[Arguments::THREADS].empty()) { arguments[Arguments::THREADS] = DEFAULT_NUM_THREADS; }
     if (arguments[Arguments::BULKSIZE].empty()) { arguments[Arguments::BULKSIZE] = DEFAULT_BULK_SIZE; }
+    if (arguments[Arguments::MIN_LENGTH_REPORT].empty()) {
+        arguments[Arguments::MIN_LENGTH_REPORT] = DEFAULT_MIN_LEN_REPORT;
+    }
     if (arguments[Arguments::MIN_SW_SCORE].empty()) { arguments[Arguments::MIN_SW_SCORE] = DEFAULT_MIN_SW_SCORE; }
     if (arguments[Arguments::MIN_SW_SCORE_DIFF].empty()) {
         arguments[Arguments::MIN_SW_SCORE_DIFF] = DEFAULT_MIN_SW_DIFF;

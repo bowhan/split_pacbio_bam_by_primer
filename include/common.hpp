@@ -18,6 +18,10 @@
 #define DEFAULT_BULK_SIZE "500"
 #endif
 
+#ifndef DEFAULT_MIN_LEN_REPORT
+#define DEFAULT_MIN_LEN_REPORT "100"
+#endif
+
 #ifndef DEFAULT_MIN_SW_SCORE
 #define DEFAULT_MIN_SW_SCORE "40"
 #endif
